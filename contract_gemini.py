@@ -3,7 +3,6 @@ import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 import io
-import PyPDF2
 
 load_dotenv()
 
@@ -18,14 +17,23 @@ model = genai.GenerativeModel("gemini-1.5-flash")  # Use gemini-1.5-flash
 def extract_info_gemini_vision(pdf_file):
     if pdf_file:
         prompt = f"""
-            Analyze the following contract document and extract the following information, make sure to indicate which page number and section number that the information is from, and if the information cannot be found please indicate that it was not found. Format the output as follows:
-             1. Termination Notice No. of Days: <Termination Notice and which party is giving the notice>, Page(s): <page number(s)>, Section(s): <section number(s)>
-             2. Auto Renewal: <Renewal Clause Details>, Page(s): <page number(s)>, Section(s): <section number(s)>
-             3. Signed Date of the Client (Client): <Date of the client signing>, Page(s): <page number(s)>, Section(s): <section number(s)>
-             
-             Note: The Service Provider is always Towers Watson or Willis Towers Watson. Please extract only the Client's Signature Date.
+            Analyze the following contract document and extract the following information:
 
-            Text: 
+            1. Termination Notice No. of Days:  How many days are required to give for a termination notice, and indicate which party is terminating the contract.
+            2. Auto Renewal: Does the contract contains a renewal clause, if so please include details. Find infromation that refers to the renewal of contract.
+            3. Signed Date of the Client (client): Extract the date signed by the client. 
+
+            sample output format as reference: 
+            Termination Notice No. of Days (Bank): 10 business days (Page 7, Section 13.1)
+            
+            Termination Notice No. of Days (Service Provider): 30 days (Page 7, Section 13.1)
+            
+            Auto Renewal: Yes (Page 1, Section 2.2)
+            
+            Renewal Clause: Up to two (2) additional terms of two (2) years each, with a 30 day notice before the expiration of current term. (Page 1, Section 2.2)
+            
+            Signed Date of the Client (Bank of Canada): March 9, 2023 (Page 10)
+            Note: The Service Provider is always Towers Watson or Willis Towers Watson. Please extract only the Client's Signature Date.
             """
         try:
              pdf_content = pdf_file.read()
