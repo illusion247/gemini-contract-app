@@ -31,9 +31,9 @@ def extract_info_gemini_vision(pdf_file):
             3. Signed Date of the Client (client): Extract the date signed by the client.
             4. Effectivity Date: find infromation or clause about the effectivity date of the contract.
 
-             Additional instructions:
-             1. Provide the page number and section for reference if information is available.
-             2. Output the full text of the document that you processed, keep the original spacing and layout as much as possible, add "PAGE_BREAK" before each new page and "SECTION_START:<section_number>" if you identify that it's a new section
+            Additional instructions:
+             1. Provide the page number for reference if information is available.
+             2. Output the full text of the document that you processed, keep the original spacing and layout as much as possible, add "<<PAGE_BREAK>>" before each new page.
 
             Note: The Service Provider is always Towers Watson or Willis Towers Watson. Please extract only the Client's Signature Date.
             """
@@ -45,6 +45,7 @@ def extract_info_gemini_vision(pdf_file):
             return f"Error querying Gemini API: {e}", None
     else:
          return "No file Uploaded", None
+
 
 def create_word_document(extracted_data, pdf_text, pdf_file_name):
     document = Document()
@@ -70,18 +71,16 @@ def create_word_document(extracted_data, pdf_text, pdf_file_name):
     # Add Gemini Output
     try:
         if pdf_text:
-             text = extracted_data.split("PAGE_BREAK")
-             for page_num, page_text in enumerate(text):
-                 document.add_paragraph(f"Page {page_num+1}")
-                 for line in page_text.split("\n"):
-                      if "SECTION_START:" in line:
-                           document.add_paragraph(line.strip(), style="Heading 3")
-                      else:
-                         document.add_paragraph(line.strip())
+            text = extracted_data.split("<<PAGE_BREAK>>")
+            for page_num, page_text in enumerate(text):
+                document.add_paragraph(f"Page {page_num+1}")
+                document.add_paragraph(page_text.strip())
         else:
-            document.add_paragraph("Error, no data from Gemini for text")
+           document.add_paragraph("Error: No text found")
     except Exception as e:
-         document.add_paragraph(f"Error processing Text: {e}")
+        document.add_paragraph(f"Error adding Gemini Text: {e}")
+
+
     doc_bytes = io.BytesIO()
     document.save(doc_bytes)
     doc_bytes.seek(0)
