@@ -31,8 +31,10 @@ def extract_info_gemini_vision(pdf_file):
             3. Signed Date of the Client (client): Extract the date signed by the client.
             4. Effectivity Date: find infromation or clause about the effectivity date of the contract.
 
-            additional instruction: provide the page number and section for reference if information is available
-
+            Additional instructions:
+             1. Provide the page number and section for reference if information is available.
+             2. Output the full text of the document that you processed, adding "PAGE_BREAK" before each new page.
+             
             Note: The Service Provider is always Towers Watson or Willis Towers Watson. Please extract only the Client's Signature Date.
             """
         try:
@@ -43,6 +45,41 @@ def extract_info_gemini_vision(pdf_file):
             return f"Error querying Gemini API: {e}", None
     else:
          return "No file Uploaded", None
+
+
+def create_word_document(extracted_data, pdf_text, pdf_file_name):
+    document = Document()
+    document.styles['Normal'].font.size = Pt(12)
+    section = document.sections[0]
+    section.page_height = Inches(11.69)
+    section.page_width = Inches(8.27)
+    section.left_margin = Inches(1)
+    section.right_margin = Inches(1)
+    section.top_margin = Inches(1)
+    section.bottom_margin = Inches(1)
+    document.add_heading(f"Contract Analysis for {pdf_file_name}", level=1)
+
+    if extracted_data:
+        document.add_paragraph("Extracted Information:", style="Heading 2")
+        document.add_paragraph(extracted_data)
+        document.add_paragraph("Gemini Processed Text:", style="Heading 2")
+
+    else:
+        document.add_paragraph("No information extracted.")
+        return document
+
+    # Add Gemini Output
+    try:
+        if pdf_text:
+            document.add_paragraph(extracted_data)
+        else:
+            document.add_paragraph("Error, no data from Gemini for text")
+    except Exception as e:
+      document.add_paragraph(f"Error adding Gemini Text: {e}")
+    doc_bytes = io.BytesIO()
+    document.save(doc_bytes)
+    doc_bytes.seek(0)
+    return doc_bytes.read()
 
 
 # Streamlit app
@@ -56,11 +93,12 @@ if uploaded_file:
        if extracted_data:
           st.success("Information extracted successfully!")
           st.write(extracted_data)
-          st.write("Gemini Processed Text:")
-          try:
-              st.text(pdf_text.decode("utf-8", errors="ignore")) #added error handling
-          except Exception as e:
-              st.error(f"Error decoding the text {e}")
-              st.text("Error, unable to decode the text")
+          word_file = create_word_document(extracted_data, extracted_data, uploaded_file.name) #using extracted data again as the raw data
+          st.download_button(
+               label="Export as Word Document",
+               data = word_file,
+               file_name=f"{uploaded_file.name}.docx",
+               mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+             )
        else:
           st.error("Error during information extraction.")
