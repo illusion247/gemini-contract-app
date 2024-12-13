@@ -26,7 +26,7 @@ def extract_info_gemini_vision(pdf_file):
         try:
              pdf_content = pdf_file.read()
              response = model.generate_content(
-                [prompt, genai.Blob(data = pdf_content, mime_type = "application/pdf")]
+                [prompt, {"mime_type": "application/pdf", "data": pdf_content}]
                 )
              return response.text
         except Exception as e:
