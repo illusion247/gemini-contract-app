@@ -60,30 +60,28 @@ def create_word_document(extracted_data, pdf_text, pdf_file_name):
     if extracted_data:
         document.add_paragraph("Extracted Information:", style="Heading 2")
         document.add_paragraph(extracted_data)
+        document.add_paragraph("Gemini Processed text:", style="Heading 2")
     else:
         document.add_paragraph("No information extracted.")
         return document
-
-    #highlight keywords
     try:
-      if not pdf_text:
-         document.add_paragraph("Error: No selectable text could be found in the PDF document, no word highlighting will be performed.")
-         return document
-
-      keywords = ["termination", "renewal", "date", "effectivity"]
-      for keyword in keywords:
+        if not pdf_text:
+           document.add_paragraph("Error: No selectable text could be found in the PDF document, no word highlighting will be performed.")
+           return document
+        document.add_paragraph(pdf_text.decode("utf-8")) #add the Gemini provided text to word doc
+        keywords = ["termination", "renewal", "date", "effectivity"]
+        for keyword in keywords:
           try:
-             for index in range(0, len(pdf_text), 100):
-                chunk = pdf_text[index:index + 100] # split into 100 character chunks
-                if keyword in chunk.lower():
-                   p = document.add_paragraph()
-                   p.add_run(chunk.strip().encode('utf-8')).font.highlight_color = RGBColor(255, 255, 0)  #Highlight it yellow
-                   p.add_comment(keyword)
+              for index in range(0, len(pdf_text), 100):
+                chunk = pdf_text[index:index + 100]
+                if keyword in chunk.lower().decode('utf-8'):
+                  p = document.add_paragraph()
+                  p.add_run(chunk.strip()).font.highlight_color = RGBColor(255, 255, 0) #highlight it yellow
+                  p.add_comment(keyword)
           except Exception as e:
-            document.add_paragraph(f"Error highlighting word {keyword}: {e}")
+             document.add_paragraph(f"Error highlighting word {keyword}: {e}")
     except Exception as e:
         document.add_paragraph(f"Error during processing: {e}")
-
 
     doc_bytes = io.BytesIO()
     document.save(doc_bytes)
