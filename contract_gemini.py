@@ -58,7 +58,7 @@ if uploaded_file:
           st.write(extracted_data)
           st.write("Gemini Processed Text:")
           try:
-            st.text(pdf_text.decode("utf-8"))
+              st.text(pdf_text.decode("utf-8", errors="ignore")) #added error handling
           except Exception as e:
               st.error(f"Error decoding the text {e}")
               st.text("Error, unable to decode the text")
