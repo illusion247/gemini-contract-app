@@ -6,7 +6,7 @@ from io import BytesIO
 
 # Set up Gemini API client
 #Get the API key from the streamlit Secrets section
-api_key = st.secrets["AIzaSyCWC8fiA6mUX590yF4tSchHxLA7iQBe3BY"]
+api_key = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=api_key)
 
 # Load the model
@@ -50,7 +50,7 @@ def extract_info_gemini(text):
 
 
 # Streamlit app
-st.title("Contract Information Extractor with Gemini jeje")
+st.title("Contract Information Extractor with Gemini")
 uploaded_file = st.file_uploader("Upload a Contract PDF", type="pdf")
 
 
