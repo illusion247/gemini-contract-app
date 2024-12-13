@@ -1,4 +1,6 @@
+python-docx
 streamlit
 google-generativeai
 python-dotenv
 PyPDF2
+streamlit-pdf-viewer
