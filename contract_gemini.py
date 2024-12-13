@@ -72,15 +72,15 @@ def create_word_document(extracted_data, pdf_text, pdf_file_name):
 
       keywords = ["termination", "renewal", "date", "effectivity"]
       for keyword in keywords:
-        try:
-          for index in range(0, len(pdf_text), 100):
-            chunk = pdf_text[index:index + 100] # split into 100 character chunks
-            if keyword in chunk.lower():
-                p = document.add_paragraph()
-                p.add_run(chunk.strip()).font.highlight_color = RGBColor(255, 255, 0)  #Highlight it yellow
-                p.add_comment(keyword)
-        except Exception as e:
-           document.add_paragraph(f"Error highlighting word {keyword}: {e}")
+          try:
+             for index in range(0, len(pdf_text), 100):
+                chunk = pdf_text[index:index + 100] # split into 100 character chunks
+                if keyword in chunk.lower():
+                   p = document.add_paragraph()
+                   p.add_run(chunk.strip().encode('utf-8')).font.highlight_color = RGBColor(255, 255, 0)  #Highlight it yellow
+                   p.add_comment(keyword)
+          except Exception as e:
+            document.add_paragraph(f"Error highlighting word {keyword}: {e}")
     except Exception as e:
         document.add_paragraph(f"Error during processing: {e}")
 
