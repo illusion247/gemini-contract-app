@@ -22,6 +22,7 @@ def extract_info_gemini_vision(pdf_file):
             1. Termination Notice No. of Days:  How many days are required to give for a termination notice, and indicate which party is terminating the contract.
             2. Auto Renewal: Does the contract contains a renewal clause, if so please include details. Find infromation that refers to the renewal of contract.
             3. Signed Date of the Client (client): Extract the date signed by the client. 
+            4. Effectivity Date: find infromation or clause about the effectivity date of the contract. 
 
             start sample output format as reference: 
             Termination Notice No. of Days (Bank): 10 business days (Page 7, Section 13.1)
@@ -47,7 +48,7 @@ def extract_info_gemini_vision(pdf_file):
          return "No file Uploaded"
 
 # Streamlit app
-st.title("Contract Information Extractor with Gemini Vision")
+st.title("Contract Information Extractor")
 uploaded_file = st.file_uploader("Upload a Contract PDF", type="pdf")
 
 if uploaded_file:
