@@ -56,7 +56,11 @@ if uploaded_file:
        if extracted_data:
           st.success("Information extracted successfully!")
           st.write(extracted_data)
-          st.write("Gemini Processed Text:") #add this line
-          st.text(pdf_text) #add this line
+          st.write("Gemini Processed Text:")
+          try:
+            st.text(pdf_text.decode("utf-8"))
+          except Exception as e:
+              st.error(f"Error decoding the text {e}")
+              st.text("Error, unable to decode the text")
        else:
           st.error("Error during information extraction.")
