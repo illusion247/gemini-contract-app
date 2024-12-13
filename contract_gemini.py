@@ -38,55 +38,12 @@ def extract_info_gemini_vision(pdf_file):
         try:
              pdf_content = pdf_file.read()
              response = model.generate_content([prompt, {"mime_type": "application/pdf", "data": pdf_content}])
-             return response.text, pdf_content #return the text and the pdf file as binary
+             return response.text, pdf_content
         except Exception as e:
-            return f"Error querying Gemini API: {e}", None #return None if there was an error
+            return f"Error querying Gemini API: {e}", None
     else:
-         return "No file Uploaded", None #return None if there was no file uploaded
+         return "No file Uploaded", None
 
-
-def create_word_document(extracted_data, pdf_text, pdf_file_name):
-    document = Document()
-    document.styles['Normal'].font.size = Pt(12)
-    section = document.sections[0]
-    section.page_height = Inches(11.69)
-    section.page_width = Inches(8.27)
-    section.left_margin = Inches(1)
-    section.right_margin = Inches(1)
-    section.top_margin = Inches(1)
-    section.bottom_margin = Inches(1)
-    document.add_heading(f"Contract Analysis for {pdf_file_name}", level=1)
-
-    if extracted_data:
-        document.add_paragraph("Extracted Information:", style="Heading 2")
-        document.add_paragraph(extracted_data)
-        document.add_paragraph("Gemini Processed text:", style="Heading 2")
-    else:
-        document.add_paragraph("No information extracted.")
-        return document
-    try:
-        if not pdf_text:
-           document.add_paragraph("Error: No selectable text could be found in the PDF document, no word highlighting will be performed.")
-           return document
-        document.add_paragraph(pdf_text.decode("utf-8")) #add the Gemini provided text to word doc
-        keywords = ["termination", "renewal", "date", "effectivity"]
-        for keyword in keywords:
-          try:
-              for index in range(0, len(pdf_text), 100):
-                chunk = pdf_text[index:index + 100]
-                if keyword in chunk.lower().decode('utf-8'):
-                  p = document.add_paragraph()
-                  p.add_run(chunk.strip()).font.highlight_color = RGBColor(255, 255, 0) #highlight it yellow
-                  p.add_comment(keyword)
-          except Exception as e:
-             document.add_paragraph(f"Error highlighting word {keyword}: {e}")
-    except Exception as e:
-        document.add_paragraph(f"Error during processing: {e}")
-
-    doc_bytes = io.BytesIO()
-    document.save(doc_bytes)
-    doc_bytes.seek(0)
-    return doc_bytes.read()
 
 # Streamlit app
 st.title("Contract Information Extractor")
@@ -99,13 +56,7 @@ if uploaded_file:
        if extracted_data:
           st.success("Information extracted successfully!")
           st.write(extracted_data)
-          word_file = create_word_document(extracted_data, pdf_text, uploaded_file.name)
-          st.download_button(
-               label="Export as Word Document",
-               data = word_file,
-               file_name=f"{uploaded_file.name}.docx",
-               mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-             )
-
+          st.write("Gemini Processed Text:") #add this line
+          st.text(pdf_text) #add this line
        else:
           st.error("Error during information extraction.")
