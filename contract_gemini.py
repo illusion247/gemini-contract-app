@@ -8,6 +8,8 @@ from docx import Document
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
+from docx.shared import RGBColor
+from docx.oxml.ns import qn
 import base64
 
 load_dotenv()
@@ -44,28 +46,49 @@ def extract_info_gemini_vision(pdf_file):
          return "No file Uploaded"
 
 
-def create_word_document(extracted_data, pdf_file_name):
-     document = Document()
-     document.styles['Normal'].font.size = Pt(12)
-     section = document.sections[0]
-     section.page_height = Inches(11.69)
-     section.page_width = Inches(8.27)
-     section.left_margin = Inches(1)
-     section.right_margin = Inches(1)
-     section.top_margin = Inches(1)
-     section.bottom_margin = Inches(1)
-     document.add_heading(f"Contract Analysis for {pdf_file_name}", level=1)
+def create_word_document(extracted_data, pdf_file, pdf_file_name):
+    document = Document()
+    document.styles['Normal'].font.size = Pt(12)
+    section = document.sections[0]
+    section.page_height = Inches(11.69)
+    section.page_width = Inches(8.27)
+    section.left_margin = Inches(1)
+    section.right_margin = Inches(1)
+    section.top_margin = Inches(1)
+    section.bottom_margin = Inches(1)
+    document.add_heading(f"Contract Analysis for {pdf_file_name}", level=1)
+    if extracted_data:
+        document.add_paragraph("Extracted Information:", style="Heading 2")
+        document.add_paragraph(extracted_data)
+    else:
+        document.add_paragraph("No information extracted.")
 
-     if extracted_data:
-         document.add_paragraph("Extracted Information:", style = "Heading 2")
-         document.add_paragraph(extracted_data)
-     else:
-         document.add_paragraph("No information extracted.")
+    #highlight keywords
+    try:
+       pdf_text = ""
+       pdf_file_object = io.BytesIO(pdf_file.read())
+       pdf_reader = PyPDF2.PdfReader(pdf_file_object)
+       for page_num in range(len(pdf_reader.pages)):
+           page = pdf_reader.pages[page_num]
+           page_text = page.extract_text()
+           pdf_text+=page_text
 
-     doc_bytes = io.BytesIO()
-     document.save(doc_bytes)
-     doc_bytes.seek(0)
-     return doc_bytes.read()
+       keywords = ["termination", "renewal", "date", "effectivity"]
+
+       for keyword in keywords:
+           for index in range(0, len(pdf_text), 100):
+               chunk = pdf_text[index:index + 100] # split into 100 character chunks
+               if keyword in chunk.lower():
+                p = document.add_paragraph()
+                p.add_run(chunk.strip()).font.highlight_color = RGBColor(255, 255, 0)  #Highlight it yellow
+                p.add_comment(keyword)
+    except Exception as e:
+           document.add_paragraph(f"Error highlighting the words: {e}")
+
+    doc_bytes = io.BytesIO()
+    document.save(doc_bytes)
+    doc_bytes.seek(0)
+    return doc_bytes.read()
 
 # Streamlit app
 st.title("Contract Information Extractor")
@@ -78,7 +101,7 @@ if uploaded_file:
        if extracted_data:
           st.success("Information extracted successfully!")
           st.write(extracted_data)
-          word_file = create_word_document(extracted_data, uploaded_file.name)
+          word_file = create_word_document(extracted_data, uploaded_file, uploaded_file.name)
           st.download_button(
                label="Export as Word Document",
                data = word_file,
