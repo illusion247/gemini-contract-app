@@ -3,7 +3,6 @@ import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 import io
-import PyPDF2
 from docx import Document
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -39,14 +38,14 @@ def extract_info_gemini_vision(pdf_file):
         try:
              pdf_content = pdf_file.read()
              response = model.generate_content([prompt, {"mime_type": "application/pdf", "data": pdf_content}])
-             return response.text
+             return response.text, pdf_content #return the text and the pdf file as binary
         except Exception as e:
-            return f"Error querying Gemini API: {e}"
+            return f"Error querying Gemini API: {e}", None #return None if there was an error
     else:
-         return "No file Uploaded"
+         return "No file Uploaded", None #return None if there was no file uploaded
 
 
-def create_word_document(extracted_data, pdf_file, pdf_file_name):
+def create_word_document(extracted_data, pdf_text, pdf_file_name):
     document = Document()
     document.styles['Normal'].font.size = Pt(12)
     section = document.sections[0]
@@ -63,38 +62,28 @@ def create_word_document(extracted_data, pdf_file, pdf_file_name):
         document.add_paragraph(extracted_data)
     else:
         document.add_paragraph("No information extracted.")
+        return document
 
     #highlight keywords
     try:
-       pdf_text = ""
-       pdf_file_object = io.BytesIO(pdf_file.read())
-       pdf_reader = PyPDF2.PdfReader(pdf_file_object)
-       for page_num in range(len(pdf_reader.pages)):
-           page = pdf_reader.pages[page_num]
-           try:
-               page_text = page.extract_text()
-               pdf_text+=page_text
-           except Exception as e:
-                 print (f"Error during text extraction for page {page_num}. {e}")
-       if not pdf_text.strip():
-          document.add_paragraph("Error: No selectable text could be found in the PDF document, no word highlighting will be performed.")
-          return document
+      if not pdf_text:
+         document.add_paragraph("Error: No selectable text could be found in the PDF document, no word highlighting will be performed.")
+         return document
 
-       keywords = ["termination", "renewal", "date", "effectivity"]
-       for keyword in keywords:
-         try:
-           for index in range(0, len(pdf_text), 100):
-               chunk = pdf_text[index:index + 100] # split into 100 character chunks
-               if keyword in chunk.lower():
+      keywords = ["termination", "renewal", "date", "effectivity"]
+      for keyword in keywords:
+        try:
+          for index in range(0, len(pdf_text), 100):
+            chunk = pdf_text[index:index + 100] # split into 100 character chunks
+            if keyword in chunk.lower():
                 p = document.add_paragraph()
                 p.add_run(chunk.strip()).font.highlight_color = RGBColor(255, 255, 0)  #Highlight it yellow
                 p.add_comment(keyword)
-         except Exception as e:
+        except Exception as e:
            document.add_paragraph(f"Error highlighting word {keyword}: {e}")
-
-
     except Exception as e:
-           document.add_paragraph(f"Error during processing: {e}")
+        document.add_paragraph(f"Error during processing: {e}")
+
 
     doc_bytes = io.BytesIO()
     document.save(doc_bytes)
@@ -107,12 +96,12 @@ uploaded_file = st.file_uploader("Upload a Contract PDF", type="pdf")
 
 if uploaded_file:
     with st.spinner("Extracting information..."):
-       extracted_data = extract_info_gemini_vision(uploaded_file)
+       extracted_data, pdf_text = extract_info_gemini_vision(uploaded_file)
 
        if extracted_data:
           st.success("Information extracted successfully!")
           st.write(extracted_data)
-          word_file = create_word_document(extracted_data, uploaded_file, uploaded_file.name)
+          word_file = create_word_document(extracted_data, pdf_text, uploaded_file.name)
           st.download_button(
                label="Export as Word Document",
                data = word_file,
