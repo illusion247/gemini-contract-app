@@ -24,20 +24,7 @@ def extract_info_gemini_vision(pdf_file):
             3. Signed Date of the Client (client): Extract the date signed by the client. 
             4. Effectivity Date: find infromation or clause about the effectivity date of the contract. 
 
-            start sample output format as reference: 
-           1. Termination Notice No. of Days (Bank): 10 business days (Page 7, Section 13.1)
-            
-             Termination Notice No. of Days (Service Provider): 30 days (Page 7, Section 13.1)
-            
-           2. Auto Renewal: Yes (Page 1, Section 2.2)
-            
-            Renewal Clause: Up to two (2) additional terms of two (2) years each, with a 30 day notice before the expiration of current term. (Page 1, Section 2.2)
-            
-         3.   Signed Date of the Client (Bank of Canada): March 9, 2023 (Page 10)
-           end sample output format as reference
-           
-         4.  Effectivity Date: March 10, 2023 (Page 1, Section 2.1)
-           Termination Date: March 10, 2024 (Page 1, Section 2.1)
+       
            
             Note: The Service Provider is always Towers Watson or Willis Towers Watson. Please extract only the Client's Signature Date.
             """
