@@ -11,7 +11,7 @@ api_key = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=api_key)
 
 # Load the model
-model = genai.GenerativeModel("gemini-pro-vision")  # Use gemini-pro-vision to handle images
+model = genai.GenerativeModel("gemini-1.5-flash")  # Use gemini-1.5-flash
 
 # Function to extract info directly from PDF with Gemini
 def extract_info_gemini_vision(pdf_file):
@@ -25,9 +25,7 @@ def extract_info_gemini_vision(pdf_file):
             """
         try:
              pdf_content = pdf_file.read()
-             response = model.generate_content(
-                [prompt, {"mime_type": "application/pdf", "data": pdf_content}]
-                )
+             response = model.generate_content([prompt, pdf_content])
              return response.text
         except Exception as e:
             return f"Error querying Gemini API: {e}"
