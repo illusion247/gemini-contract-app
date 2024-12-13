@@ -50,7 +50,7 @@ def extract_info_gemini(text):
 
 
 # Streamlit app
-st.title("Contract Information Extractor with Gemini")
+st.title("Contract Information Extractor with Gemini jeje")
 uploaded_file = st.file_uploader("Upload a Contract PDF", type="pdf")
 
 
