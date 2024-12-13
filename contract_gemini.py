@@ -25,7 +25,7 @@ def extract_info_gemini_vision(pdf_file):
             """
         try:
              pdf_content = pdf_file.read()
-             response = model.generate_content([prompt, pdf_content])
+             response = model.generate_content([prompt, {"mime_type": "application/pdf", "data": pdf_content}])
              return response.text
         except Exception as e:
             return f"Error querying Gemini API: {e}"
