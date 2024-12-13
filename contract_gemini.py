@@ -24,7 +24,7 @@ def extract_info_gemini_vision(pdf_file):
             3. Signed Date of the Client (client): Extract the date signed by the client. 
             4. Effectivity Date: find infromation or clause about the effectivity date of the contract. 
 
-       
+            additional instruction: provide the page number and section for reference if information is available 
            
             Note: The Service Provider is always Towers Watson or Willis Towers Watson. Please extract only the Client's Signature Date.
             """
