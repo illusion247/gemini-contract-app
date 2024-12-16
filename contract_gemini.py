@@ -91,7 +91,8 @@ def extract_info_gemini_vision(pdf_file):
 
 # Streamlit app
 with st.sidebar:
-    st.title("Contract Information Extractor")
+    #st.title("Contract Information Extractor")
+    st.header("Contract Information Extractor", divider="gray")
     uploaded_file = st.file_uploader("Upload a Contract PDF", type="pdf")
 
 if uploaded_file:
