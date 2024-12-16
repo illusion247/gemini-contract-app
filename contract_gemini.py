@@ -3,13 +3,7 @@ import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 import io
-from docx import Document
-from docx.shared import Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Pt
-from docx.shared import RGBColor
-from docx.oxml.ns import qn
-import base64
+import re
 
 load_dotenv()
 
@@ -27,64 +21,73 @@ def extract_info_gemini_vision(pdf_file):
             Analyze the following contract document and extract the following information:
 
             1. Termination Notice No. of Days:  How many days are required to give for a termination notice, and indicate which party is terminating the contract.
-            2. Auto Renewal: Does the contract contains a renewal clause, if so please include details. Find infromation that refers to the renewal of contract.
+            2. Auto Renewal: Does the contract contains a renewal clause, if so please include details. Find information that refers to the renewal of contract.
             3. Signed Date of the Client (client): Extract the date signed by the client.
-            4. Effectivity Date: find infromation or clause about the effectivity date of the contract.
-
+            4. Effectivity Date: find information or clause about the effectivity date of the contract.
+            5. Service provider: Willis Towerswatson or Towers Watson entity name involve
+            6. Data privacy: Extract information related to Data privacy agreements or clause related
             Additional instructions:
-             1. Provide the page number for reference if information is available.
-             2. Output the full text of the document that you processed, keep the original spacing and layout as much as possible, add "<<PAGE_BREAK>>" before each new page.
+             1. Provide the page number and section number for reference if information is available.
+             2. For each of the above, only output the relevant text that was parsed from the document and format the output in the following format using these tags.
+                
+                  [Service]
+                  [results]
+                  <b>WTW Entity:</b> <Service provider>
+                  [raw extracted]
+                 <relevant text from the signature section>
+                  [Service]
 
-            Note: The Service Provider is always Towers Watson or Willis Towers Watson. Please extract only the Client's Signature Date.
+                [Termination]
+                [results]
+                <b>Termination Notice No. of Days:</b> <Termination Notice and which party is giving the notice> <br>
+                 Section(s): <section number(s)>, Page(s): <page number(s)>
+                [raw extracted]
+                 <relevant text from the termination section>
+                [Termination]
+
+                [Renewal]
+                [results]
+                 <b>Auto Renewal:</b> <Renewal Clause Details> <br>
+                 Section(s): <section number(s)>, Page(s): <page number(s)>
+                [raw extracted]
+                 <relevant text from the renewal section>
+                [Renewal]
+
+                 [Signed Date]
+                [results]
+                 <b>Signed Date of the Client (<client name>):</b> <Date of the client signing> <br>
+                  Section(s): <section number(s)>, Page(s): <page number(s)>
+                 [raw extracted]
+                 <relevant text from the signature section>
+                 [Signed Date]
+
+                 [Effectivity Date]
+                  [results]
+                  <b>Effectivity Date:</b> <Effectivity Date> <br>
+                  Section(s): <section number(s)>, Page(s): <page number(s)>
+                  [raw extracted]
+                   <relevant text from the Effectivity section>
+                  [Effectivity Date]
+
+                  [Data privacy]
+                  [results]
+                  <b>Data privacy:</b> <Data privacy agreements or clause related> <br>
+                  Section(s): <section number(s)>, Page(s): <page number(s)>
+                  [raw extracted]
+                 <relevant text from the Data privacy section>
+                  [Data privacy]
+
+        Note: The Service Provider is always Towers Watson or Willis Towers Watson. Please extract only the Client's Signature Date.
             """
         try:
              pdf_content = pdf_file.read()
              response = model.generate_content([prompt, {"mime_type": "application/pdf", "data": pdf_content}])
-             return response.text, pdf_content
+             return response.text
         except Exception as e:
-            return f"Error querying Gemini API: {e}", None
+            return f"Error querying Gemini API: {e}"
     else:
-         return "No file Uploaded", None
+         return "No file Uploaded"
 
-
-def create_word_document(extracted_data, pdf_text, pdf_file_name):
-    document = Document()
-    document.styles['Normal'].font.size = Pt(12)
-    section = document.sections[0]
-    section.page_height = Inches(11.69)
-    section.page_width = Inches(8.27)
-    section.left_margin = Inches(1)
-    section.right_margin = Inches(1)
-    section.top_margin = Inches(1)
-    section.bottom_margin = Inches(1)
-    document.add_heading(f"Contract Analysis for {pdf_file_name}", level=1)
-
-    if extracted_data:
-        document.add_paragraph("Extracted Information:", style="Heading 2")
-        document.add_paragraph(extracted_data)
-        document.add_paragraph("Gemini Processed Text:", style="Heading 2")
-
-    else:
-        document.add_paragraph("No information extracted.")
-        return document
-
-    # Add Gemini Output
-    try:
-        if pdf_text:
-            text = extracted_data.split("<<PAGE_BREAK>>")
-            for page_num, page_text in enumerate(text):
-                document.add_paragraph(f"Page {page_num+1}")
-                document.add_paragraph(page_text.strip())
-        else:
-           document.add_paragraph("Error: No text found")
-    except Exception as e:
-        document.add_paragraph(f"Error adding Gemini Text: {e}")
-
-
-    doc_bytes = io.BytesIO()
-    document.save(doc_bytes)
-    doc_bytes.seek(0)
-    return doc_bytes.read()
 
 # Streamlit app
 st.title("Contract Information Extractor")
@@ -92,17 +95,64 @@ uploaded_file = st.file_uploader("Upload a Contract PDF", type="pdf")
 
 if uploaded_file:
     with st.spinner("Extracting information..."):
-       extracted_data, pdf_text = extract_info_gemini_vision(uploaded_file)
-
+       extracted_data = extract_info_gemini_vision(uploaded_file)
        if extracted_data:
           st.success("Information extracted successfully!")
-          st.write(extracted_data)
-          word_file = create_word_document(extracted_data, pdf_text, uploaded_file.name)
-          st.download_button(
-               label="Export as Word Document",
-               data = word_file,
-               file_name=f"{uploaded_file.name}.docx",
-               mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-             )
+
+          service_match = re.search(r"\[Service\]\s*\[results\]\s*(.*?)\s*\[raw extracted\]\s*(.*?)\s*\[Service\]", extracted_data, re.DOTALL)
+          termination_match = re.search(r"\[Termination\]\s*\[results\]\s*(.*?)\s*\[raw extracted\]\s*(.*?)\s*\[Termination\]", extracted_data, re.DOTALL)
+          renewal_match = re.search(r"\[Renewal\]\s*\[results\]\s*(.*?)\s*\[raw extracted\]\s*(.*?)\s*\[Renewal\]", extracted_data, re.DOTALL)
+          signed_match = re.search(r"\[Signed Date\]\s*\[results\]\s*(.*?)\s*\[raw extracted\]\s*(.*?)\s*\[Signed Date\]", extracted_data, re.DOTALL)
+          effectivity_match = re.search(r"\[Effectivity Date\]\s*\[results\]\s*(.*?)\s*\[raw extracted\]\s*(.*?)\s*\[Effectivity Date\]", extracted_data, re.DOTALL)
+          Dataprivacy_match = re.search(r"\[Data privacy\]\s*\[results\]\s*(.*?)\s*\[raw extracted\]\s*(.*?)\s*\[Data privacy\]", extracted_data, re.DOTALL)
+
+          with st.expander("Service Provider", expanded=True):
+            if service_match:
+              results, raw_text = service_match.groups()
+              st.markdown(results.strip(), unsafe_allow_html=True)  # Use markdown for HTML
+              st.code(raw_text.strip(), wrap_lines=True)
+            else:
+              st.write("Not found")  
+            
+          with st.expander("Signed Date", expanded=True):
+                if signed_match:
+                  results, raw_text = signed_match.groups()
+                  st.markdown(results.strip(), unsafe_allow_html=True)  # Use markdown for HTML
+                  st.code(raw_text.strip(), wrap_lines=True)
+                else:
+                   st.write("Not found")
+          with st.expander("Effectivity Date", expanded=True):
+               if effectivity_match:
+                 results, raw_text = effectivity_match.groups()
+                 st.markdown(results.strip(), unsafe_allow_html=True)  # Use markdown for HTML
+                 st.code(raw_text.strip(), wrap_lines=True)
+               else:
+                    st.write("Not found")
+          with st.expander("Termination", expanded=True):
+                if termination_match:
+                  results, raw_text = termination_match.groups()
+                  st.markdown(results.strip(), unsafe_allow_html=True) # Use markdown for HTML
+                  #radio_markdown = raw_text.strip()
+                  #st.markdown("<b><font color=red>Reference</font></b>", help=radio_markdown, unsafe_allow_html=True)
+                  st.code(raw_text.strip(), wrap_lines=True)
+                else:
+                    st.write("Not found")
+          with st.expander("Auto Renewal", expanded=True):
+                if renewal_match:
+                    results, raw_text = renewal_match.groups()
+                    st.markdown(results.strip(), unsafe_allow_html=True)  # Use markdown for HTML
+                    st.code(raw_text.strip(), wrap_lines=True)
+                else:
+                    st.write("Not found")
+
+          with st.expander("Data privacy", expanded=True):
+                if Dataprivacy_match:
+                    results, raw_text = Dataprivacy_match.groups()
+                    st.markdown(results.strip(), unsafe_allow_html=True)  # Use markdown for HTML
+                    st.code(raw_text.strip(), wrap_lines=True)
+                else:
+                    st.write("Not found")
+
+
        else:
           st.error("Error during information extraction.")
