@@ -18,63 +18,111 @@ model = genai.GenerativeModel("gemini-1.5-flash")  # Use gemini-1.5-flash
 def extract_info_gemini_vision(pdf_file):
     if pdf_file:
         prompt = f"""
-            Analyze the following contract document and extract the following information:
+         Analyze the following contract document below and extract the following information: 
 
-            1. Termination Notice No. of Days:  How many days are required to give for a termination notice, and indicate which party is terminating the contract.
-            2. Auto Renewal: Does the contract contains a renewal clause, if so please include details. Find information that refers to the renewal of contract.
-            3. Signed Date of the Client (client): Extract the date signed by the client.
-            4. Effectivity Date: find information or clause about the effectivity date of the contract.
-            5. Service provider: Willis Towerswatson or Towers Watson entity name involve
-            6. Data privacy: Extract information related to Data privacy agreements or clause related
-            Additional instructions:
+             1. Termination Notice No. of Days: Specify the termination notice period, including whether it is for cause or without cause, and indicate any termination fees or conditions.
+
+            2. Auto Renewal: Does the contract contain an auto-renewal clause? If so, provide the details, including the notice period required to prevent renewal.
+
+            3. Signed Date of the Client (client):  Extract the signed date by the client (if available in the document).
+
+            4. Effectivity and termination Date: Find and extract the effective and termination date of the agreement, including any references to initial or renewal terms.
+
+            5. Service provider: Identify the vendor or service provider mentioned in the contract and any associated entities involved in the agreement.
+            
+            6. Data privacy: Summarize any clauses related to data privacy, including obligations regarding personal data protection, compliance with regulations, or roles of the parties (e.g., data processor or controller).
+
+
+           
+
+		   Additional instructions:
+
              1. Provide the page number and section number for reference if information is available.
+
              2. For each of the above, only output the relevant text that was parsed from the document and format the output in the following format using these tags.
+
                 
+
                   [Service]
+
                   [results]
+
                   <b>WTW Entity:</b> <Service provider>
+
                   [raw extracted]
+
                  <relevant text from the signature section>
+
                   [Service]
 
                 [Termination]
+
                 [results]
+
                 <b>Termination Notice No. of Days:</b> <Termination Notice and which party is giving the notice> <br>
+
                  Section(s): <section number(s)>, Page(s): <page number(s)>
+
                 [raw extracted]
+
                  <relevant text from the termination section>
+
                 [Termination]
 
                 [Renewal]
+
                 [results]
+
                  <b>Auto Renewal:</b> <Renewal Clause Details> <br>
+
                  Section(s): <section number(s)>, Page(s): <page number(s)>
+
                 [raw extracted]
+
                  <relevant text from the renewal section>
+
                 [Renewal]
 
                  [Signed Date]
+
                 [results]
+
                  <b>Signed Date of the Client (<client name>):</b> <Date of the client signing> <br>
+
                   Section(s): <section number(s)>, Page(s): <page number(s)>
+
                  [raw extracted]
+
                  <relevant text from the signature section>
+
                  [Signed Date]
 
                  [Effectivity Date]
+
                   [results]
+
                   <b>Effectivity Date:</b> <Effectivity Date> <br>
+
                   Section(s): <section number(s)>, Page(s): <page number(s)>
+
                   [raw extracted]
+
                    <relevant text from the Effectivity section>
+
                   [Effectivity Date]
 
                   [Data privacy]
+
                   [results]
+
                   <b>Data privacy:</b> <Data privacy agreements or clause related> <br>
+
                   Section(s): <section number(s)>, Page(s): <page number(s)>
+
                   [raw extracted]
+
                  <relevant text from the Data privacy section>
+
                   [Data privacy]
 
         Note: The Service Provider is always Towers Watson or Willis Towers Watson. Please extract only the Client's Signature Date.
